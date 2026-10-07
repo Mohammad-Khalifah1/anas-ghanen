@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/waiting_provider.dart';
 import 'ticket_dialog.dart';
 
 class AddGroupSheet extends StatefulWidget {
-  const AddGroupSheet({
-    super.key,
-  });
+  const AddGroupSheet({super.key});
 
   @override
   State<AddGroupSheet> createState() => _AddGroupSheetState();
@@ -33,9 +32,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
     }
 
     final name = _nameController.text.trim();
-    final partySize = int.tryParse(
-      _partySizeController.text.trim(),
-    );
+    final partySize = int.tryParse(_partySizeController.text.trim());
 
     if (partySize == null || partySize <= 0) {
       return;
@@ -58,15 +55,11 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
       }
 
       if (group == null) {
-        _showError(
-          'تعذر إضافة المجموعة. حاول مرة أخرى.',
-        );
+        _showError('تعذر إضافة المجموعة. حاول مرة أخرى.');
         return;
       }
 
-      final groupsAhead = await provider.groupsAhead(
-        group.id,
-      );
+      final groupsAhead = await provider.groupsAhead(group.id);
 
       if (!mounted) {
         return;
@@ -77,10 +70,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
       await showDialog<void>(
         context: context,
         builder: (_) {
-          return TicketDialog(
-            group: group,
-            groupsAhead: groupsAhead,
-          );
+          return TicketDialog(group: group, groupsAhead: groupsAhead);
         },
       );
     } catch (error) {
@@ -88,13 +78,9 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
         return;
       }
 
-      _showError(
-        'حدث خطأ غير متوقع. حاول مرة أخرى.',
-      );
+      _showError('حدث خطأ غير متوقع. حاول مرة أخرى.');
 
-      debugPrint(
-        'AddGroupSheet submit error: $error',
-      );
+      debugPrint('AddGroupSheet submit error: $error');
     } finally {
       if (mounted) {
         setState(() {
@@ -105,11 +91,9 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -118,12 +102,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
 
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          20,
-          20,
-          20 + bottomInset,
-        ),
+        padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
         child: Form(
           key: _formKey,
           child: Column(
@@ -132,19 +111,21 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
             children: [
               const Text(
                 'إضافة مجموعة',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               TextFormField(
                 controller: _nameController,
                 textInputAction: TextInputAction.next,
                 textCapitalization: TextCapitalization.words,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(
+                    RegExp(r'[a-zA-Z\u0600-\u06FF\s]'),
+                  ),
+                ],
                 decoration: const InputDecoration(
                   labelText: 'اسم المجموعة',
-                  hintText: 'مثال: أحمد',
+                  hintText: 'مثال: أحمد أو Ahmed',
                   border: OutlineInputBorder(),
                 ),
                 validator: _validateName,
@@ -154,6 +135,10 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                 controller: _partySizeController,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(2),
+                ],
                 onFieldSubmitted: (_) => _submit(),
                 decoration: const InputDecoration(
                   labelText: 'عدد الأشخاص',
@@ -169,13 +154,9 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                     ? const SizedBox(
                         width: 22,
                         height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text(
-                        'إضافة إلى قائمة الانتظار',
-                      ),
+                    : const Text('إضافة إلى قائمة الانتظار'),
               ),
               const SizedBox(height: 8),
             ],
@@ -186,30 +167,32 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
   }
 
   String? _validateName(String? value) {
-    final name = value?.trim() ?? '';
+  final name = value?.trim() ?? '';
 
-    if (name.isEmpty) {
-      return 'أدخل اسم المجموعة';
-    }
-
-    if (name.length < 2) {
-      return 'الاسم قصير جداً';
-    }
-
-    return null;
+  if (name.isEmpty) {
+    return 'أدخل اسم المجموعة';
   }
 
+  if (name.length < 2) {
+    return 'الاسم قصير جداً';
+  }
+
+  return null;
+}
+
   String? _validatePartySize(String? value) {
-    final size = int.tryParse(
-      value?.trim() ?? '',
-    );
+    final size = int.tryParse(value?.trim() ?? '');
 
     if (size == null) {
       return 'أدخل عدد الأشخاص';
     }
 
-    if (size <= 0) {
-      return 'يجب أن يكون العدد أكبر من صفر';
+    if (size < 1) {
+      return 'يجب أن يكون العدد شخصاً واحداً على الأقل';
+    }
+
+    if (size > 30) {
+      return 'الحد الأقصى للمجموعة هو 30 شخصاً';
     }
 
     return null;

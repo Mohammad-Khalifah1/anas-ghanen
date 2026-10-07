@@ -74,8 +74,7 @@ class GroupTile extends StatelessWidget {
               itemBuilder: (context) => const [
                 PopupMenuItem(
                   value: 'seat',
-                  child: Text('تسكين المجموعة'),
-                ),
+child: Text('تم الجلوس'),                ),
                 PopupMenuItem(
                   value: 'cancel',
                   child: Text('إلغاء المجموعة'),
